@@ -27,7 +27,8 @@ CACHE_DIR = '.cache'
 URL  = 'http://yann.lecun.com/exdb/mnist/'
 
 last_percent_reported = None
-
+# This is a simple example with one layer, it's not sufficient
+# Just to kind of get started
 def main ():
     with(open('config.json', 'r')) as f:
         config = json.load(f)

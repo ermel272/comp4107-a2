@@ -60,15 +60,15 @@ def main ():
     layer1 = Layer(cells)
 
     layers = [layer1]
-
+    # training
     for image, output in zip(input_training, train_labels)[:500]:
         target = Target(output)
-        for i in range(len(cells)):
-            cells[i].set_inputs(image)
-            actual_output = cells[i].compute_and_update_output()
+        for i in range(len(layer1.cells)):
+            layer1.cells[i].set_inputs(image)
+            actual_output = layer1.cells[i].compute_and_update_output()
 
             error_delta = target.get(i) - actual_output
-            cells[i].update_weights(error_delta)
+            layer1.cells[i].update_weights(error_delta)
 
     test_image, test_output = zip(input_training, train_labels)[50]
 

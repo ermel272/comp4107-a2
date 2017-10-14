@@ -1,12 +1,11 @@
+import math
+from Cell import Cell
 class Layer(object):
-    def __init__(self, cells = []):
-        self.cells = cells
-    def predict(self):
-        maxOut = 0
-        maxIndex = 0
+    def __init__(self, num_cells, af = lambda x: 1.0 / (1 + math.exp(-x))):
+        self.num_cells = num_cells
+        self.cells = [Cell() for i in range(num_cells)]
+        self.activation_function = af
 
+    def init_weights(self, num_cells):
         for i in range(len(self.cells)):
-            if self.cells[i].output > maxOut:
-                maxOut = self.cells[i].output
-                maxIndex = i
-        return maxIndex
+            self.cells[i].init_weights(num_cells)

@@ -2,6 +2,8 @@
 from lib.Cell import Cell
 from lib.Layer import Layer
 from lib.Target import Target
+from lib.Network import Network
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -44,49 +46,29 @@ def main ():
     train_data = load_pickle(train_pickle)
     train_labels = load_pickle(train_labels_pickle)
     test_data = load_pickle(test_pickle)
+
+    plt.imshow(train_data[0])
+    plt.show()
     # There are now 60,000 items of length 784 (28x28)
     # This will serve as input to neural network
     # Each cell will have 784 inputs
     input_training = [i.flatten() for i in train_data]
 
-    print len(input_training)
-    print len(train_labels)
-
-    # Initialize our cells as empty
-    cells = [Cell(28 * 28, learning_rate=LEARNING_RATE) for i in range(10)]
-    # Since we want to recognize 10 different handwritten digits, our network
-    # needs 10 cells per layer (for digits 0-9)
-
     # our system will be simple, one hidden layer
-    layer1 = Layer(cells)
-
-    layers = [layer1]
+    net = Network()
+    net.add_layer(28 * 28, sigmoid)
+    net.add_layer(20, sigmoid)
+    net.add_layer(10, sigmoid)
+    imagenum = 0
     # training
     for image, output in zip(input_training, train_labels)[:500]:
-        target = Target(output)
-        for i in range(len(layer1.cells)):
-            layer1.cells[i].set_inputs(image)
-            actual_output = layer1.cells[i].compute_and_update_output()
+        print 'Processing image %s' % imagenum
+        imagenum += 1
+        net.train(image, output)
 
-            error_delta = target.get(i) - actual_output
-            layer1.cells[i].update_weights(error_delta)
+    test_image, test_output = zip(input_training, train_labels)[0]
 
-    test_image, test_output = zip(input_training, train_labels)[50]
-
-    for i in range(len(layer1.cells)):
-        layer1.cells[i].set_inputs(test_image)
-        layer1.cells[i].compute_and_update_output()
-
-    print "Predicted: %s" % layer1.predict()
-    print "Actual: %s" % test_output
-
-    test_image, test_output = zip(input_training, train_labels)[51]
-
-    for i in range(len(layer1.cells)):
-        layer1.cells[i].set_inputs(test_image)
-        layer1.cells[i].compute_and_update_output()
-
-    print "Predicted: %s" % layer1.predict()
+    print "Predicted: %s" % net.identify(test_image)
     print "Actual: %s" % test_output
 
 

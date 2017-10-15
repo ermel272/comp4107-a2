@@ -1,5 +1,6 @@
 from scipy.misc import derivative
 from Layer import Layer
+import math
 class Network(object):
     def __init__(self, layers = [], learning_rate = 0.5):
         self.learning_rate = learning_rate
@@ -18,15 +19,15 @@ class Network(object):
             p = self.layers[i - 1]
             l = self.layers[i]
             for j in range(len(l.cells)): # for each cell in current layer
-                l.cells[j].output = l.cells[j].bias
+                l.cells[j].output += l.cells[j].bias
 
                 for w in range(len(l.cells[j].weights)):
-                    l.cells[j].output += float(p.cells[w].output * l.cells[j].weights[w])
+                    l.cells[j].output += p.cells[w].output * l.cells[j].weights[w]
                 # Process nodes output through activation function (def: Sigmoid)
                 l.cells[j].output = l.activation_function(l.cells[j].output)
 
 
-    def back_propogate(self, target_label = 0):
+    def back_propagate_output_layer(self, target_label = 0):
         """
             After performing feedforward, we have to
             find an error at each layer, and push it back
@@ -35,15 +36,18 @@ class Network(object):
             Params:
                 target_label:Number - Expected output
         """
-        normalized_target = 0 if target_label is 0 else 1
-        for i in range(1, len(self.layers)):
-            prev_layer = self.layers[-(i+1)]
-            layer = self.layers[-i]
-            for cell in layer.cells:
-                errorsig = float((normalized_target - cell.output)) * derivative(layer.activation_function, cell.output, dx=1e-4)
-                for w in range(len(cell.weights)):
-                    cell.weights[w] += self.learning_rate * prev_layer.cells[w].output * errorsig
-                cell.bias += self.learning_rate * errorsig
+        output_layer = self.layers[-1]
+        last_hidden_layer = self.layers[-2]
+
+        output_layer.back_propagate(last_hidden_layer, target_label, self.learning_rate)
+
+
+    def back_propagate_hidden_layer(self, target_label = 0):
+        for i in range(1, len(self.layers) - 1):
+            prev_layer = self.layers[-i]
+            layer = self.layers[-1 * (i + 1)]
+            next_layer = self.layers[-1 * (i + 2)]
+            layer.back_propagate(prev_layer, next_layer, target_label, self.learning_rate)
 
 
     def train(self, image_vector, image_label):
@@ -56,7 +60,8 @@ class Network(object):
         assert len(self.layers) > 0, "No input layer has been defined"
         self.feed_input(image_vector)
         self.feed_forward_network()
-        self.back_propogate(image_label)
+        self.back_propagate_output_layer(image_label)
+        self.back_propagate_hidden_layer(image_label)
 
     def identify(self, image_vector):
         assert len(self.layers) > 0, "No input layer has been defined"
@@ -73,8 +78,8 @@ class Network(object):
                 i = cell_index
         return i
 
-    def add_layer(self, num_cells = 0, af = None):
-        l = Layer(num_cells = num_cells, af=af)
+    def add_layer(self, layer_class = Layer, num_cells = 0, af = None):
+        l = layer_class(num_cells = num_cells, af=af)
         if len(self.layers) is not 0:
             l.init_weights(self.layers[-1].num_cells)
         self.layers.append(l)

@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 from lib.Cell import Cell
 from lib.Layer import Layer
+from lib.HiddenLayer import HiddenLayer
+from lib.OutputLayer import OutputLayer
 from lib.Target import Target
 from lib.Network import Network
+import warnings
 
 from decimal import Decimal
 # import matplotlib.pyplot as plt
@@ -11,10 +14,10 @@ import numpy as np
 from scipy import misc
 from six.moves.urllib.request import urlretrieve
 from six.moves import cPickle as pickle
-from sklearn.model_selection import KFold
 from IPython.display import display, Image
 
 import math, json, random, struct, array, os, operator, sys, functools, gzip, random
+
 
 DATA_TYPES = {
     0x08: 'B',  # unsigned byte
@@ -60,37 +63,32 @@ def main ():
     if not net:
         # our system will be simple, one hidden layer
         net = Network()
-        net.add_layer(28 * 28)
+        net.add_layer(Layer, 28 * 28)
 
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
+        net.add_layer(HiddenLayer, 20, sigmoid) # the amount of neurons at this layer can be adjusted
 
-
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-
-        net.add_layer(10, sigmoid) # output layer
+        net.add_layer(OutputLayer, 10, sigmoid) # output layer
         gym = zip(input_training, train_labels)
         random.shuffle(gym)
-        for image, output in gym:
+        train_count = 0.0
+        train_set_size = 100
+        for image, output in gym[:train_set_size]:
+            if ((train_count / train_set_size) * 100) % 5 == 0:
+                print '%s %%!' % ((train_count / train_set_size) * 100)
             sys.stdout.write(".")
             sys.stdout.flush()
 
             net.train(image, output)
+            train_count += 1
 
         sys.stdout.write("\nDone!\n")
         sys.stdout.flush()
         maybe_pickle(config['brain']['filename'], net)
+    gym = zip(input_training, train_labels)
+    random.shuffle(gym)
+    for image, output in gym[50:100]:
+        p = net.identify(image)
+        print p, output
 
 
 def download_progress_hook(count, blockSize, totalSize):
@@ -171,7 +169,7 @@ def load_pickle (f):
         return None
 
 def sigmoid(x):
-  return float(1.0 / (1.0 + float(math.exp(-x))))
+    return 1.0 / (1 + math.exp(-x))
 
 
 if __name__ == '__main__':

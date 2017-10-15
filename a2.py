@@ -4,7 +4,8 @@ from lib.Layer import Layer
 from lib.Target import Target
 from lib.Network import Network
 
-import matplotlib.pyplot as plt
+from decimal import Decimal
+# import matplotlib.pyplot as plt
 import numpy as np
 
 from scipy import misc
@@ -13,7 +14,7 @@ from six.moves import cPickle as pickle
 from sklearn.model_selection import KFold
 from IPython.display import display, Image
 
-import math, json, random, struct, array, os, operator, sys, functools, gzip
+import math, json, random, struct, array, os, operator, sys, functools, gzip, random
 
 DATA_TYPES = {
     0x08: 'B',  # unsigned byte
@@ -35,9 +36,9 @@ def main ():
     with(open('config.json', 'r')) as f:
         config = json.load(f)
 
-    train_filename_gz = maybe_download(config["train"]["images"], 9912422)
-    test_filename_gz  = maybe_download(config["test"]["images"], 1648877)
-    train_labels_gz = maybe_download(config["train"]["labels"], 28881)
+    train_filename_gz = maybe_download(config['train']['images'], 9912422)
+    test_filename_gz  = maybe_download(config['test']['images'], 1648877)
+    train_labels_gz = maybe_download(config['train']['labels'], 28881)
 
     train_pickle = extract(train_filename_gz)
     train_labels_pickle = extract(train_labels_gz)
@@ -47,10 +48,10 @@ def main ():
     train_labels = load_pickle(train_labels_pickle)
     test_data = load_pickle(test_pickle)
 
-    net = load_pickle('.cache/brain.pickle')
+    net = load_pickle(config['brain']['filename'])
 
     if net:
-        print 'Using already existing neural network from .cache/brain.pickle'
+        print 'Using already existing neural network from %s' % config['brain']['filename']
 
     # There are now 60,000 items of length 784 (28x28)
     # This will serve as input to neural network
@@ -60,33 +61,36 @@ def main ():
         # our system will be simple, one hidden layer
         net = Network()
         net.add_layer(28 * 28)
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(10, sigmoid) # output layer
 
-        # training
-        for image, output in zip(input_training, train_labels):
+        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
+        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
+        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
+
+
+        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
+        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
+        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
+
+        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
+        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
+        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
+
+        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
+        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
+        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
+
+        net.add_layer(10, sigmoid) # output layer
+        gym = zip(input_training, train_labels)
+        random.shuffle(gym)
+        for image, output in gym:
             sys.stdout.write(".")
             sys.stdout.flush()
+
             net.train(image, output)
+
         sys.stdout.write("\nDone!\n")
         sys.stdout.flush()
-        maybe_pickle('.cache/brain.pickle', net)
-    test_image, test_output = zip(input_training, train_labels)[0]
-
-    print "Predicted: %s" % net.identify(test_image)
-    print "Actual: %s" % test_output
-
-
-    # Target (output)
-    # The target output will be a binary representation of our output
-
-
-    # print train_labels
-    #
-    # kf = KFold(n_splits = 10)
-    #
-    # for train_index, test_index in kf.split(train_data):
-    #     break
+        maybe_pickle(config['brain']['filename'], net)
 
 
 def download_progress_hook(count, blockSize, totalSize):
@@ -167,7 +171,7 @@ def load_pickle (f):
         return None
 
 def sigmoid(x):
-  return 1.0 / (1 + math.exp(-x))
+  return float(1.0 / (1.0 + float(math.exp(-x))))
 
 
 if __name__ == '__main__':

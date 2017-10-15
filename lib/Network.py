@@ -1,29 +1,30 @@
 from scipy.misc import derivative
 from Layer import Layer
 class Network(object):
-    def __init__(self, layers = [], learning_rate = 0.25):
+    def __init__(self, layers = [], learning_rate = 0.5):
         self.learning_rate = learning_rate
         self.layers = layers
 
     def feed_input (self, image_vector):
-        il = self.layers[0]
-        assert len(il.cells) == len(image_vector), """
+        assert len(self.layers[0].cells) == len(image_vector), """
             Number of cells in input layer should match length of input vector
         """
-
-        for i in range(len(il.cells)):
-            il.cells[i].set_output(image_vector[i])
+        normalized_image_vector = [1.0 if i else 0.0 for i in image_vector]
+        for i in range(len(self.layers[0].cells)):
+            self.layers[0].cells[i].set_output(normalized_image_vector[i])
 
     def feed_forward_network(self):
         for i in range(1, len(self.layers)): # for all layers after input layer
             p = self.layers[i - 1]
             l = self.layers[i]
             for j in range(len(l.cells)): # for each cell in current layer
-                l.cells[j].set_output(l.cells[j].bias) # init cell output as bias
+                l.cells[j].output = l.cells[j].bias
+
                 for w in range(len(l.cells[j].weights)):
-                    l.cells[j].output += p.cells[w].output * l.cells[j].weights[w]
+                    l.cells[j].output += float(p.cells[w].output * l.cells[j].weights[w])
                 # Process nodes output through activation function (def: Sigmoid)
                 l.cells[j].output = l.activation_function(l.cells[j].output)
+
 
     def back_propogate(self, target_label = 0):
         """
@@ -39,7 +40,7 @@ class Network(object):
             prev_layer = self.layers[-(i+1)]
             layer = self.layers[-i]
             for cell in layer.cells:
-                errorsig = (normalized_target - cell.output) * derivative(layer.activation_function, cell.output, dx=1e-6)
+                errorsig = float((normalized_target - cell.output)) * derivative(layer.activation_function, cell.output, dx=1e-4)
                 for w in range(len(cell.weights)):
                     cell.weights[w] += self.learning_rate * prev_layer.cells[w].output * errorsig
                 cell.bias += self.learning_rate * errorsig
@@ -53,8 +54,7 @@ class Network(object):
             4. Classify the image (*guess* what digit is presented in the image)
         """
         assert len(self.layers) > 0, "No input layer has been defined"
-        normalized_image_vector = [1 if i else 0 for i in image_vector]
-        self.feed_input(normalized_image_vector)
+        self.feed_input(image_vector)
         self.feed_forward_network()
         self.back_propogate(image_label)
 

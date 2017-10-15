@@ -47,25 +47,30 @@ def main ():
     train_labels = load_pickle(train_labels_pickle)
     test_data = load_pickle(test_pickle)
 
-    plt.imshow(train_data[0])
-    plt.show()
+    net = load_pickle('.cache/brain.pickle')
+
+    if net:
+        print 'Using already existing neural network from .cache/brain.pickle'
+
     # There are now 60,000 items of length 784 (28x28)
     # This will serve as input to neural network
     # Each cell will have 784 inputs
     input_training = [i.flatten() for i in train_data]
+    if not net:
+        # our system will be simple, one hidden layer
+        net = Network()
+        net.add_layer(28 * 28)
+        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
+        net.add_layer(10, sigmoid) # output layer
 
-    # our system will be simple, one hidden layer
-    net = Network()
-    net.add_layer(28 * 28, sigmoid)
-    net.add_layer(20, sigmoid)
-    net.add_layer(10, sigmoid)
-    imagenum = 0
-    # training
-    for image, output in zip(input_training, train_labels)[:500]:
-        print 'Processing image %s' % imagenum
-        imagenum += 1
-        net.train(image, output)
-
+        # training
+        for image, output in zip(input_training, train_labels):
+            sys.stdout.write(".")
+            sys.stdout.flush()
+            net.train(image, output)
+        sys.stdout.write("\nDone!\n")
+        sys.stdout.flush()
+        maybe_pickle('.cache/brain.pickle', net)
     test_image, test_output = zip(input_training, train_labels)[0]
 
     print "Predicted: %s" % net.identify(test_image)
@@ -155,8 +160,11 @@ def parse_idx(fd):
 
 def load_pickle (f):
     print 'Performing pickle.load(%s)' % f
-    with open(f, 'rb') as tp:
-        return pickle.load(tp)
+    try:
+        with open(f, 'rb') as tp:
+            return pickle.load(tp)
+    except IOError:
+        return None
 
 def sigmoid(x):
   return 1.0 / (1 + math.exp(-x))

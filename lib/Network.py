@@ -20,7 +20,7 @@ class Network(object):
             for j in range(len(l.cells)): # for each cell in current layer
                 l.cells[j].output = l.cells[j].bias
 
-                for w in range(len(l.cells[j].weights)):
+                for w in range(len(p.cells)):
                     l.cells[j].output += float(p.cells[w].output * l.cells[j].weights[w])
                 # Process nodes output through activation function (def: Sigmoid)
                 l.cells[j].output = l.activation_function(l.cells[j].output)
@@ -35,16 +35,58 @@ class Network(object):
             Params:
                 target_label:Number - Expected output
         """
-        normalized_target = 0 if target_label is 0 else 1
-        for i in range(1, len(self.layers)):
-            prev_layer = self.layers[-(i+1)]
-            layer = self.layers[-i]
-            for cell in layer.cells:
-                errorsig = float((normalized_target - cell.output)) * derivative(layer.activation_function, cell.output, dx=1e-4)
-                for w in range(len(cell.weights)):
-                    cell.weights[w] += self.learning_rate * prev_layer.cells[w].output * errorsig
-                cell.bias += self.learning_rate * errorsig
+        self.back_propagate_output_layer(target_label)
+        self.back_propagate_hidden_layer(target_label)
+        # for i in range(1, len(self.layers)):
+        #     prev_layer = self.layers[-(i+1)]
+        #     layer = self.layers[-i]
+        #     for index in range(len(layer.cells)):
+        #         cell = layer.cells[index]
+        #
+        #         normalized_target = 1 if index == target_label else 0
+        #
+        #         errorsig = float((normalized_target - cell.output)) * derivative(layer.activation_function, cell.output, dx=1e-4)
+        #         for w in range(len(cell.weights)):
+        #             cell.weights[w] += self.learning_rate * prev_layer.cells[w].output * errorsig
+        #         cell_error_sum = errorsig * sum(cell.weights)
+        #         cell.bias += self.learning_rate * cell_error_sum
 
+    def back_propagate_output_layer(self, target):
+        l = self.layers[-1]
+        for i in range(len(l.cells)):
+            icell = l.cells[i]
+            target_out = int(i == target)
+            error_delta = target_out - icell.output
+            print error_delta
+            error_signal = error_delta * l.activation_function(icell.output, der=True)
+            self.update_output_node_weights(icell, error_signal)
+
+    def update_output_node_weights(self, cell, error):
+        prev_layer = self.layers[1]
+        for w in range(len(cell.weights)):
+            cell.weights[w] += self.learning_rate * prev_layer.cells[w].output * error
+        cell.bias += self.learning_rate * 1 * error
+
+    def back_propagate_hidden_layer(self, target):
+        ol = self.layers[-1]
+        hl = self.layers[1]
+
+        for h in range(len(hl.cells)):
+            outputcellerrorsum = 0
+            for o in range(len(ol.cells)):
+                on = ol.cells[o]
+                target_out = int(o == target)
+                error_delta = target - on.output
+                error_signal = error_delta * ol.activation_function(on.output, der=True)
+                outputcellerrorsum += error_signal * on.weights[h]
+            hidden_error_signal = outputcellerrorsum * hl.activation_function(hl.cells[h].output, der=True)
+            self.update_hidden_node_weights(hl.cells[h], hidden_error_signal)
+
+    def update_hidden_node_weights(self, cell, error):
+        prev_layer = self.layers[0]
+        for w in range(len(cell.weights)):
+            cell.weights[w] += prev_layer.cells[w].output * error
+        cell.bias += self.learning_rate * 1 * error
 
     def train(self, image_vector, image_label):
         """

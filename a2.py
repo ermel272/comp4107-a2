@@ -57,32 +57,18 @@ def main ():
     # This will serve as input to neural network
     # Each cell will have 784 inputs
     input_training = [i.flatten() for i in train_data]
+    gym = zip(input_training, train_labels)
+    random.shuffle(gym)
+
     if not net:
         # our system will be simple, one hidden layer
         net = Network()
         net.add_layer(28 * 28)
 
         net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-
-
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
 
         net.add_layer(10, sigmoid) # output layer
-        gym = zip(input_training, train_labels)
-        random.shuffle(gym)
-        for image, output in gym:
+        for image, output in gym[:500]:
             sys.stdout.write(".")
             sys.stdout.flush()
 
@@ -91,6 +77,10 @@ def main ():
         sys.stdout.write("\nDone!\n")
         sys.stdout.flush()
         maybe_pickle(config['brain']['filename'], net)
+
+    for image, output in gym[:20]:
+        p = net.identify(image)
+        print p, output
 
 
 def download_progress_hook(count, blockSize, totalSize):
@@ -170,8 +160,11 @@ def load_pickle (f):
     except IOError:
         return None
 
-def sigmoid(x):
-  return float(1.0 / (1.0 + float(math.exp(-x))))
+def sigmoid(x, der=False):
+    if der:
+        simple = 1 / (1 + np.exp(-x))
+        return simple * (1 - simple)
+    return float(1.0 / (1.0 + (math.exp(-x))))
 
 
 if __name__ == '__main__':

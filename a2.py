@@ -2,10 +2,10 @@
 from lib.Cell import Cell
 from lib.Layer import Layer
 from lib.Target import Target
-from lib.Network import Network, sigmoid
+from lib.Network import Network, sigmoid, softmax
 
 from decimal import Decimal
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
 
 from scipy import misc
@@ -59,32 +59,19 @@ def main ():
     # There are now 60,000 items of length 784 (28x28)
     # This will serve as input to neural network
     # Each cell will have 784 inputs
-    input_training = train_data.reshape(60000, 28 * 28)
-    gym = zip(input_training, train_labels)
-    random.shuffle(gym)
+    input_training = train_data.reshape(60000, 784)
 
     if not net:
         # our system will be simple, one hidden layer
-        net = Network(learning_rate=.05)
-        net.add_layer(28 * 28)
+        net = Network(learning_rate=.5)
+        net.add_layer(784)
 
-        net.add_layer(50, sigmoid)
-        net.add_layer(30, sigmoid)
+        net.add_layer(20, sigmoid)
 
         net.add_layer(10, sigmoid) # output layer
 
-        for image, output in gym[:200]:
-            sys.stdout.write(".")
-            sys.stdout.flush()
-
-            net.train(image, output)
-
-        sys.stdout.write("\nDone!\n")
-        sys.stdout.flush()
+        net.train(input_training, train_labels)
         maybe_pickle(config['brain']['filename'], net)
-    for image, output in gym[200:250]:
-        p = net.identify(image)
-        print p, output
 
 def download_progress_hook(count, blockSize, totalSize):
   global last_percent_reported

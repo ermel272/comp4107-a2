@@ -1,5 +1,15 @@
+from __future__ import division
+
 from Layer import Layer
+from sklearn.model_selection import KFold
 import numpy as np
+import random
+import sys
+
+def softmax(w, t = 1.0):
+    e = np.exp(np.array(w) / t)
+    dist = e / np.sum(e)
+    return dist
 
 def sigmoid(x, der=False):
     """Logistic sigmoid function.
@@ -19,28 +29,27 @@ class Network(object):
         assert len(self.layers[0].cells) == len(image_vector), """
             Number of cells in input layer should match length of input vector
         """
-        normalized_image_vector = image_vector
+        # experiment with this as only 1's and 0's
+        normalized_image_vector = [float(i != 0) for i in image_vector]
         for i in range(len(self.layers[0].cells)):
-            cell = self.layers[0].cells[i]
             self.layers[0].cells[i].output = normalized_image_vector[i]
-
     def feed_forward_network(self):
         for i in range(1, len(self.layers)): # for all layers after input layer
             prev_layer = self.layers[i - 1]
             current_layer = self.layers[i]
+
             current_layer.reset_outputs()
             current_layer.reset_correct()
             for j in range(len(current_layer.cells)): # for each cell in current layer
                 # z = w*a + b
+
                 for w in range(len(current_layer.cells[j].weights)):
                     # Number of cells in previous layer is 1-1 with number of weights per cell in current layer
                     current_layer.cells[j].output += float(prev_layer.cells[w].output * current_layer.cells[j].weights[w])
-                current_layer.cells[j].output -= current_layer.cells[j].bias
+                current_layer.cells[j].output += -1 * current_layer.cells[j].bias
                 # Process nodes output through activation function
                 # \sigma(z)
                 current_layer.cells[j].output = current_layer.activation_function(current_layer.cells[j].output)
-
-
     def back_propagate(self, target_vector):
         """
             After performing feedforward, we have to
@@ -63,9 +72,14 @@ class Network(object):
         for layer_index in range(1, len(self.layers)):
             layer = self.layers[-layer_index]
             layer_before = self.layers[-1 * (layer_index + 1)]
-            for cell in layer.cells:
+            for cell_index in range(len(layer.cells)):
+                cell = layer.cells[cell_index]
+                # basically the dot product
                 for w in range(len(cell.weights)):
-                    cell.weights[w] += self.learning_rate * layer_before.cells[w].output * cell.correct
+                    layer.cells[cell_index].weights[w] += self.learning_rate * layer_before.cells[w].output * cell.correct
+                # we should probably update bias too, because its also considered a weight
+                layer.cells[cell_index].bias += self.learning_rate * 1 * cell.correct # 1 representing cell output
+
     def correct_network(self):
         """
             let k denote the layer #
@@ -89,7 +103,7 @@ class Network(object):
         return target_vector
 
 
-    def train(self, image_vector, target_label):
+    def train(self, tset = [], tlabels = []):
         """
             1. Feed image data into the network
             2. Calculate node outputs of *hidden* and *output* layers (=FEED FORWARD)
@@ -98,11 +112,24 @@ class Network(object):
         """
         assert len(self.layers) > 0, "No input layer has been defined"
 
-        target_vector = self.target_label_as_vector(target_label)
+        gym = zip(tset, tlabels)[:2000]
+        random.shuffle(gym)
+        # target_vector = self.target_label_as_vector(target_label)
 
-        self.feed_input(image_vector)
-        self.feed_forward_network()
-        self.back_propagate(target_vector)
+        kfold = KFold(n_splits=5)
+
+        for training_indices, testing_indices in kfold.split(gym):
+            training_set = [gym[i] for i in training_indices]
+            testing_set = [gym[i] for i in testing_indices]
+            sum_error = 0
+            for image, label in training_set:
+                self.feed_input(image)
+                self.feed_forward_network()
+                self.back_propagate(self.target_label_as_vector(label))
+                prediction = self.identify(image)
+                sum_error += (label - prediction) ** 2
+            sys.stdout.write(".")
+            sys.stdout.flush()
 
     def identify(self, image_vector):
         assert len(self.layers) > 0, "No input layer has been defined"

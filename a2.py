@@ -2,7 +2,7 @@
 from lib.Cell import Cell
 from lib.Layer import Layer
 from lib.Target import Target
-from lib.Network import Network
+from lib.Network import Network, sigmoid
 
 from decimal import Decimal
 # import matplotlib.pyplot as plt
@@ -39,14 +39,17 @@ def main ():
     train_filename_gz = maybe_download(config['train']['images'], 9912422)
     test_filename_gz  = maybe_download(config['test']['images'], 1648877)
     train_labels_gz = maybe_download(config['train']['labels'], 28881)
+    test_labels_gz = maybe_download(config['test']['labels'], 4542)
 
     train_pickle = extract(train_filename_gz)
     train_labels_pickle = extract(train_labels_gz)
     test_pickle = extract(test_filename_gz)
+    test_labels_pickle = extract(test_labels_gz)
 
     train_data = load_pickle(train_pickle)
     train_labels = load_pickle(train_labels_pickle)
     test_data = load_pickle(test_pickle)
+    test_labels = load_pickle(test_labels_pickle)
 
     net = load_pickle(config['brain']['filename'])
 
@@ -56,33 +59,21 @@ def main ():
     # There are now 60,000 items of length 784 (28x28)
     # This will serve as input to neural network
     # Each cell will have 784 inputs
-    input_training = [i.flatten() for i in train_data]
+    input_training = train_data.reshape(60000, 28 * 28)
+    gym = zip(input_training, train_labels)
+    random.shuffle(gym)
+
     if not net:
         # our system will be simple, one hidden layer
-        net = Network()
+        net = Network(learning_rate=.05)
         net.add_layer(28 * 28)
 
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-
-
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(10, sigmoid) # the amount of neurons at this layer can be adjusted
-        net.add_layer(20, sigmoid) # the amount of neurons at this layer can be adjusted
+        net.add_layer(50, sigmoid)
+        net.add_layer(30, sigmoid)
 
         net.add_layer(10, sigmoid) # output layer
-        gym = zip(input_training, train_labels)
-        random.shuffle(gym)
-        for image, output in gym:
+
+        for image, output in gym[:200]:
             sys.stdout.write(".")
             sys.stdout.flush()
 
@@ -91,7 +82,9 @@ def main ():
         sys.stdout.write("\nDone!\n")
         sys.stdout.flush()
         maybe_pickle(config['brain']['filename'], net)
-
+    for image, output in gym[200:250]:
+        p = net.identify(image)
+        print p, output
 
 def download_progress_hook(count, blockSize, totalSize):
   global last_percent_reported
@@ -169,9 +162,6 @@ def load_pickle (f):
             return pickle.load(tp)
     except IOError:
         return None
-
-def sigmoid(x):
-  return float(1.0 / (1.0 + float(math.exp(-x))))
 
 
 if __name__ == '__main__':

@@ -1,32 +1,47 @@
-from scipy.misc import derivative
 from Layer import Layer
+import numpy as np
+
+def sigmoid(x, der=False):
+    """Logistic sigmoid function.
+    Use der=True for the derivative."""
+    if not der:
+        return 1 / (1 + np.exp(-x))
+    else:
+        term = 1 / (1 + np.exp(-x))
+        return term * (1 - term)
+
 class Network(object):
     def __init__(self, layers = [], learning_rate = 0.5):
         self.learning_rate = learning_rate
         self.layers = layers
 
-    def feed_input (self, image_vector):
+    def feed_input (self, image_vector = []):
         assert len(self.layers[0].cells) == len(image_vector), """
             Number of cells in input layer should match length of input vector
         """
-        normalized_image_vector = [1.0 if i else 0.0 for i in image_vector]
+        normalized_image_vector = image_vector
         for i in range(len(self.layers[0].cells)):
-            self.layers[0].cells[i].set_output(normalized_image_vector[i])
+            cell = self.layers[0].cells[i]
+            self.layers[0].cells[i].output = normalized_image_vector[i]
 
     def feed_forward_network(self):
         for i in range(1, len(self.layers)): # for all layers after input layer
-            p = self.layers[i - 1]
-            l = self.layers[i]
-            for j in range(len(l.cells)): # for each cell in current layer
-                l.cells[j].output = l.cells[j].bias
+            prev_layer = self.layers[i - 1]
+            current_layer = self.layers[i]
+            current_layer.reset_outputs()
+            current_layer.reset_correct()
+            for j in range(len(current_layer.cells)): # for each cell in current layer
+                # z = w*a + b
+                for w in range(len(current_layer.cells[j].weights)):
+                    # Number of cells in previous layer is 1-1 with number of weights per cell in current layer
+                    current_layer.cells[j].output += float(prev_layer.cells[w].output * current_layer.cells[j].weights[w])
+                current_layer.cells[j].output -= current_layer.cells[j].bias
+                # Process nodes output through activation function
+                # \sigma(z)
+                current_layer.cells[j].output = current_layer.activation_function(current_layer.cells[j].output)
 
-                for w in range(len(l.cells[j].weights)):
-                    l.cells[j].output += float(p.cells[w].output * l.cells[j].weights[w])
-                # Process nodes output through activation function (def: Sigmoid)
-                l.cells[j].output = l.activation_function(l.cells[j].output)
 
-
-    def back_propogate(self, target_label = 0):
+    def back_propagate(self, target_vector):
         """
             After performing feedforward, we have to
             find an error at each layer, and push it back
@@ -35,18 +50,46 @@ class Network(object):
             Params:
                 target_label:Number - Expected output
         """
-        normalized_target = 0 if target_label is 0 else 1
-        for i in range(1, len(self.layers)):
-            prev_layer = self.layers[-(i+1)]
-            layer = self.layers[-i]
+        output_layer = self.layers[-1]
+        for i in range(len(output_layer.cells)):
+            cell = output_layer.cells[i]
+
+            cell_error = target_vector[i] - cell.output
+            output_layer.cells[i].correct = cell_error * cell.output * (1 - cell.output)
+
+        self.correct_network()
+        self.update_weights()
+    def update_weights(self):
+        for layer_index in range(1, len(self.layers)):
+            layer = self.layers[-layer_index]
+            layer_before = self.layers[-1 * (layer_index + 1)]
             for cell in layer.cells:
-                errorsig = float((normalized_target - cell.output)) * derivative(layer.activation_function, cell.output, dx=1e-4)
                 for w in range(len(cell.weights)):
-                    cell.weights[w] += self.learning_rate * prev_layer.cells[w].output * errorsig
-                cell.bias += self.learning_rate * errorsig
+                    cell.weights[w] += self.learning_rate * layer_before.cells[w].output * cell.correct
+    def correct_network(self):
+        """
+            let k denote the layer #
+            let j denote the cell (or neuron) index within layer k
+
+            correct_{j}^{k} = out_{j}^{k} * (1 - out_{j}^{k}) * sum_{i}(all weights into node_{j}^{k}) * correct_{j}^{k+1}
+        """
+        # We already computed output layer at this point, and we won't modify correct term
+        # for the input layer
+        for layer_index in range(1, len(self.layers)):
+            layer = self.layers[-layer_index]
+            layer_before = self.layers[-1 * (layer_index + 1)]
+            for cell_index in range(len(layer_before.cells)):
+                cell = layer_before.cells[cell_index]
+                term = sum([cell.weights[cell_index] * cell.correct for cell in layer.cells])
+                layer_before.cells[cell_index].correct = cell.output * (1 - cell.output) * term
+
+    def target_label_as_vector(self, target_label = 0):
+        target_vector = np.zeros(len(self.layers[-1].cells))
+        target_vector[target_label] = 1
+        return target_vector
 
 
-    def train(self, image_vector, image_label):
+    def train(self, image_vector, target_label):
         """
             1. Feed image data into the network
             2. Calculate node outputs of *hidden* and *output* layers (=FEED FORWARD)
@@ -54,9 +97,12 @@ class Network(object):
             4. Classify the image (*guess* what digit is presented in the image)
         """
         assert len(self.layers) > 0, "No input layer has been defined"
+
+        target_vector = self.target_label_as_vector(target_label)
+
         self.feed_input(image_vector)
         self.feed_forward_network()
-        self.back_propogate(image_label)
+        self.back_propagate(target_vector)
 
     def identify(self, image_vector):
         assert len(self.layers) > 0, "No input layer has been defined"

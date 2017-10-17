@@ -9,3 +9,9 @@ class Layer(object):
     def init_weights(self, num_cells):
         for i in range(len(self.cells)):
             self.cells[i].init_weights(num_cells)
+    def reset_outputs(self):
+        for i in range(len(self.cells)):
+            self.cells[i].output = 0
+    def reset_correct(self):
+        for i in range(len(self.cells)):
+            self.cells[i].correct = None

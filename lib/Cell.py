@@ -12,7 +12,6 @@ class Cell(object):
             weights spanning 1-m-1, the mth term is x_m = -1
             and the weight corresponding to it would be the bias term
         """
-        self.bias = 0.7 * (-1 if np.random.rand() > 0.5 else 1) * np.random.rand()
+        self.bias = (-1 if np.random.rand() > 0.5 else 1) * np.random.rand()
         weights = np.random.rand(num_weights)
-        weights = [(-i if np.random.rand() > 0.5 else i) for i in weights]
-        self.weights = [0.7 * i for i in weights]
+        self.weights = [(-i if np.random.rand() > 0.5 else i) for i in weights]

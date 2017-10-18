@@ -2,9 +2,11 @@ from __future__ import division
 
 from Layer import Layer
 from sklearn.model_selection import KFold
+import matplotlib.pyplot as plt
 import numpy as np
 import random
 import sys
+import pandas as pd
 
 def softmax(w, t = 1.0):
     e = np.exp(np.array(w) / t)
@@ -16,9 +18,6 @@ def sigmoid(x, der=False):
     Use der=True for the derivative."""
     if not der:
         return 1 / (1 + np.exp(-x))
-    else:
-        term = 1 / (1 + np.exp(-x))
-        return term * (1 - term)
 
 class Network(object):
     def __init__(self, layers = [], learning_rate = 0.5):
@@ -40,6 +39,7 @@ class Network(object):
 
             current_layer.reset_outputs()
             current_layer.reset_correct()
+
             for j in range(len(current_layer.cells)): # for each cell in current layer
                 # z = w*a + b
 
@@ -111,25 +111,53 @@ class Network(object):
             4. Classify the image (*guess* what digit is presented in the image)
         """
         assert len(self.layers) > 0, "No input layer has been defined"
-
+        self.accuracy_list = []
         gym = zip(tset, tlabels)[:2000]
         random.shuffle(gym)
         # target_vector = self.target_label_as_vector(target_label)
 
-        kfold = KFold(n_splits=5)
-
+        kfold = KFold(n_splits=10)
+        count = 0
         for training_indices, testing_indices in kfold.split(gym):
             training_set = [gym[i] for i in training_indices]
             testing_set = [gym[i] for i in testing_indices]
-            sum_error = 0
             for image, label in training_set:
                 self.feed_input(image)
                 self.feed_forward_network()
                 self.back_propagate(self.target_label_as_vector(label))
-                prediction = self.identify(image)
-                sum_error += (label - prediction) ** 2
-            sys.stdout.write(".")
+                sys.stdout.write(".")
+                sys.stdout.flush()
+
+            num_correct = 0
+            for test_image, test_label in testing_set:
+                self.feed_input(test_image)
+                self.feed_forward_network()
+                prediction = self.identify(test_image)
+                num_correct += int(prediction == test_label)
+                sys.stdout.write(",")
+                sys.stdout.flush()
+
+            accuracy = num_correct / len(testing_set)
+            self.accuracy_list.append(accuracy)
+            self.mean_accuracy = np.mean(self.accuracy_list)
+
+            count += 1
+
+            sys.stdout.write("\n%d / %d folds completed.\n" % (count, kfold.get_n_splits()))
             sys.stdout.flush()
+
+            sys.stdout.write("\n%.2f accuracy so far.\n" % self.mean_accuracy)
+            sys.stdout.flush()
+
+            if (self.mean_accuracy >= 0.8):
+                break
+
+        self.plot = {"Accuracy": self.accuracy_list}
+        print 'mean_accuracy', self.mean_accuracy
+        fig, ax = plt.subplots()
+        errors = pd.DataFrame(self.plot)
+        errors.plot(ax=ax)
+        plt.show()
 
     def identify(self, image_vector):
         assert len(self.layers) > 0, "No input layer has been defined"

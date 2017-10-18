@@ -1,4 +1,5 @@
 import numpy as np
+
 class Cell(object):
     def __init__(self, bias = 0.0, output = 0.0):
         self.correct = None
@@ -12,6 +13,6 @@ class Cell(object):
             weights spanning 1-m-1, the mth term is x_m = -1
             and the weight corresponding to it would be the bias term
         """
-        self.bias = (-1 if np.random.rand() > 0.5 else 1) * np.random.rand()
-        weights = np.random.rand(num_weights)
-        self.weights = [(-i if np.random.rand() > 0.5 else i) for i in weights]
+        # range of random is [-0.5, 0.5)
+        self.bias = np.random.rand() - 0.5
+        self.weights = [i - 0.5 for i in np.random.rand(num_weights)]

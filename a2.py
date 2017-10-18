@@ -63,7 +63,7 @@ def main ():
 
     if not net:
         # our system will be simple, one hidden layer
-        net = Network(learning_rate=.5)
+        net = Network(learning_rate=.125)
         net.add_layer(784)
 
         net.add_layer(20, sigmoid)

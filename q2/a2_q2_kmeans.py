@@ -21,13 +21,9 @@ def main():
     train_pickle = extract(train_filename_gz)
     train_data = load_pickle(train_pickle)
 
-    # There are now 60,000 items of length 784 (28x28)
-    # This will serve as input to neural network
-    # Each cell will have 784 inputs
+    # Only take the first 2000 data as a sample
     input_training = train_data.reshape(60000, 784)[:2000]
-
     distance_list = []
-
     whitened = whiten(input_training)
     max_k = 30
     for i in range(1, max_k + 1):

@@ -12,7 +12,7 @@ import numpy as np
 from six.moves import cPickle as pickle
 from six.moves.urllib.request import urlretrieve
 
-from lib.Network import Network, sigmoid
+from lib.RBFNetwork import RBFNetwork, gaussian
 
 DATA_TYPES = {
     0x08: 'B',  # unsigned byte
@@ -63,21 +63,21 @@ def main():
 
     if not net:
         # our system will be simple, one hidden layer
-        net = Network(learning_rate=.125)
+        net = RBFNetwork(learning_rate=.125)
         net.add_layer(784)
 
-        net.add_layer(20, sigmoid)
+        net.add_layer(20, gaussian)
 
-        net.add_layer(10, sigmoid)  # output layer
+        net.add_layer(10, gaussian)  # output layer
 
         net.train(input_training, train_labels)
         maybe_pickle(config['brain']['filename'], net)
 
 
-def download_progress_hook(count, blockSize, totalSize):
+def download_progress_hook(count, block_size, total_size):
     global last_percent_reported
 
-    percent = int(count * blockSize * 100 / totalSize)
+    percent = int(count * block_size * 100 / total_size)
 
     if last_percent_reported != percent:
         if percent % 5 == 0:
@@ -111,7 +111,7 @@ def extract(filename, force=False):
 
 
 def maybe_pickle(filename, data, force=False):
-    if (not os.path.exists(filename) or force):
+    if not os.path.exists(filename) or force:
         with open(filename, 'wb') as pf:
             print 'Pickling %s' % filename
             pickle.dump(data, pf, pickle.HIGHEST_PROTOCOL)

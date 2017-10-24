@@ -11,6 +11,7 @@ import pandas as pd
 from numpy.linalg import norm
 from scipy.cluster.vq import kmeans, whiten
 from a2_q2 import maybe_download, extract, load_pickle
+from q2.lib.RBFNetwork import compute_clusters
 
 
 def main():
@@ -28,12 +29,7 @@ def main():
     for i in k_values:
         print "Performing K-Means clustering with K = {}".format(i)
         centroids, distortion = kmeans(whitened, i)
-        clusters = [list() for centroid in centroids]
-
-        # Sort vector's into their clusters
-        for vector in input_training:
-            c = __find_closest_centroid(vector, centroids)
-            clusters[c].append(vector)
+        clusters = compute_clusters(centroids,input_training)
 
         total_dist = 0
         # Compute distance from each cluster's points to their centroid
@@ -53,20 +49,6 @@ def main():
     errors = pd.DataFrame(plot)
     errors.plot(ax=ax)
     plt.show()
-
-
-def __find_closest_centroid(vector, centroids):
-    centroid = 0
-    smallest_distance = norm(vector - centroids[0]) ** 2
-
-    for i in range(1, len(centroids)):
-        dist = norm(vector - centroids[i]) ** 2
-
-        if dist < smallest_distance:
-            smallest_distance = dist
-            centroid = i
-
-    return centroid
 
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@ import numpy as np
 from six.moves import cPickle as pickle
 from six.moves.urllib.request import urlretrieve
 
-from lib.RBFNetwork import RBFNetwork, gaussian
+from lib.RBFNetwork import RBFNetwork
 
 DATA_TYPES = {
     0x08: 'B',  # unsigned byte
@@ -23,7 +23,8 @@ DATA_TYPES = {
     0x0e: 'd'
 }  # double (8 bytes)
 
-LEARNING_RATE = 0.5
+LEARNING_RATE = 0.1
+K = 20
 CACHE_DIR = '.cache'
 URL = 'http://yann.lecun.com/exdb/mnist/'
 
@@ -50,14 +51,17 @@ def main():
     else:
         input_training = train_data.reshape(60000, 784)
 
-        # our system will be simple, one hidden layer
-        net = RBFNetwork(learning_rate=.125)
+        # Regularize data to use 0's and 1's
+        for i in range(0, len(input_training)):
+            input_training[i] = [float(j != 0) for j in input_training[i]]
 
-        # First layer containing 20 neurons derived from K-Means
-        net.add_layer(20, gaussian)
-        net.add_layer(10, gaussian)  # output layer
+        # Initialize the RBF network
+        net = RBFNetwork(input_training, learning_rate=LEARNING_RATE)
 
+        # Train the network
         net.train(input_training, train_labels)
+
+        # Save the network to a pickle file
         maybe_pickle(config['brain']['filename'], net)
 
 

@@ -20,8 +20,9 @@ def sigmoid(x, der=False):
         return 1 / (1 + np.exp(-x))
 
 class Network(object):
-    def __init__(self, layers = [], learning_rate = 0.5):
+    def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10):
         self.learning_rate = learning_rate
+        self.n_splits = n_splits
         self.layers = layers
 
     def feed_input (self, image_vector = []):
@@ -112,11 +113,10 @@ class Network(object):
         """
         assert len(self.layers) > 0, "No input layer has been defined"
         self.accuracy_list = []
-        gym = zip(tset, tlabels)[:2000]
+        gym = zip(tset, tlabels)
         random.shuffle(gym)
         # target_vector = self.target_label_as_vector(target_label)
-
-        kfold = KFold(n_splits=10)
+        kfold = KFold(n_splits=self.n_splits)
         count = 0
         for training_indices, testing_indices in kfold.split(gym):
             training_set = [gym[i] for i in training_indices]

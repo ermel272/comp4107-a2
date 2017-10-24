@@ -36,15 +36,16 @@ def main():
 
     if not net:
         # our system will be simple, one hidden layer
-        net = Network(learning_rate=.125)
+        net = Network(learning_rate=.05, n_splits=20)
         net.add_layer(784)
 
-        net.add_layer(20, sigmoid)
+        net.add_layer(50, sigmoid)
+        net.add_layer(30, sigmoid)
 
         net.add_layer(10, sigmoid)  # output layer
 
-        net.train(input_training[:250], train_labels[:250])
-        maybe_pickle(config['brain']['filename'], net)
+        net.train(input_training, train_labels)
+        maybe_pickle('.cache/brain=l.05-784-50-30-10-20split.pickle', net)
 
 
 if __name__ == '__main__':

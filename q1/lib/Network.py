@@ -20,8 +20,9 @@ def sigmoid(x, der=False):
         return 1 / (1 + np.exp(-x))
 
 class Network(object):
-    def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10):
+    def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10, weight_decay=0.01):
         self.learning_rate = learning_rate
+        self.weight_decay = weight_decay
         self.n_splits = n_splits
         self.layers = layers
 
@@ -78,8 +79,10 @@ class Network(object):
                 # basically the dot product
                 for w in range(len(cell.weights)):
                     layer.cells[cell_index].weights[w] += self.learning_rate * layer_before.cells[w].output * cell.correct
+                    layer.cells[cell_index].weights[w] *= (1 - self.weight_decay)
                 # we should probably update bias too, because its also considered a weight
                 layer.cells[cell_index].bias += self.learning_rate * 1 * cell.correct # 1 representing cell output
+                layer.cells[cell_index].bias *= (1 - self.weight_decay)
 
     def correct_network(self):
         """

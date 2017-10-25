@@ -23,8 +23,8 @@ DATA_TYPES = {
     0x0e: 'd'
 }  # double (8 bytes)
 
-LEARNING_RATE = 0.1
-K = 20
+LEARNING_RATE = 0.125
+K = 5
 CACHE_DIR = '.cache'
 URL = 'http://yann.lecun.com/exdb/mnist/'
 
@@ -49,14 +49,16 @@ def main():
     if net:
         print 'Using already existing neural network from %s' % config['brain']['filename']
     else:
-        input_training = train_data.reshape(60000, 784)
+        input_training = train_data.reshape(60000, 784)[:2000]
 
         # Regularize data to use 0's and 1's
+        print "Regularizing input vector data to use 1's and 0's"
         for i in range(0, len(input_training)):
-            input_training[i] = [float(j != 0) for j in input_training[i]]
+            image_vector = input_training[i]
+            input_training[i] = [float(j != 0) for j in image_vector] # [pixel / (255.0 / 2) - 1 for pixel in image_vector]
 
         # Initialize the RBF network
-        net = RBFNetwork(input_training, learning_rate=LEARNING_RATE)
+        net = RBFNetwork(input_training, k=K, learning_rate=LEARNING_RATE)
 
         # Train the network
         net.train(input_training, train_labels)

@@ -10,33 +10,27 @@ import pandas as pd
 
 from util import maybe_pickle
 
-MAX_PIXEL_INTENSITY = 255.
-def softmax(w, t = 1.0):
-    e = np.exp(np.array(w) / t)
-    dist = e / np.sum(e)
-    return dist
-
 sigmoid = lambda x: 1. / (1 + np.exp(-x))
 
 def save(net):
     layer_arch = "-".join([str(l.num_cells) for l in net.layers])
-    filename = ".cache/brain?learning_rate=%s&weight_decay=%s&n_splits=%s&layers=%s.pickle" % (net.learning_rate, net.weight_decay, net.n_splits, layer_arch)
+    filename = ".cache/brain?learning_rate=%s&n_splits=%s&layers=%s.pickle" % (net.learning_rate, net.n_splits, layer_arch)
 
     maybe_pickle(filename, net)
 
 class Network(object):
-    def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10, weight_decay=0.01, weight_interval=(-0.5, 0.5), max_epochs=100, tolerance=0.001):
+
+    def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10, weight_interval=(-0.5, 0.5), max_epochs=100, tolerance=0.001):
         self.learning_rate = learning_rate
-        self.weight_decay = weight_decay
-        self.weight_interval = weight_interval
+        self.weight_range = weight_range
         self.n_splits = n_splits
         self.layers = layers
         self.max_epochs = max_epochs
         self.tolerance = tolerance
+
     def sanitize_image(self, image_vector = []):
-        """https://arxiv.org/pdf/1003.0358.pdf"""
-        # return [pixel / (MAX_PIXEL_INTENSITY / 2) - 1 for pixel in image_vector]
         return [float(pixel != 0) for pixel in image_vector]
+
     def feed_input (self, image_vector = []):
         assert len(self.layers[0].cells) == len(image_vector), """
             Number of cells in input layer should match length of input vector
@@ -55,7 +49,6 @@ class Network(object):
 
             for j in range(len(current_layer.cells)): # for each cell in current layer
                 # z = w*a + b
-
                 for w in range(len(current_layer.cells[j].weights)):
                     # Number of cells in previous layer is 1-1 with number of weights per cell in current layer
                     current_layer.cells[j].output += float(prev_layer.cells[w].output * current_layer.cells[j].weights[w])
@@ -90,10 +83,8 @@ class Network(object):
                 # basically the dot product
                 for w in range(len(cell.weights)):
                     layer.cells[cell_index].weights[w] += self.learning_rate * layer_before.cells[w].output * cell.correct
-                    layer.cells[cell_index].weights[w] *= (1 - self.weight_decay)
                 # we should probably update bias too, because its also considered a weight
                 layer.cells[cell_index].bias += self.learning_rate * 1 * cell.correct # 1 representing cell output
-                layer.cells[cell_index].bias *= (1 - self.weight_decay)
 
     def correct_network(self):
         """

@@ -33,9 +33,9 @@ def main():
     net = Network(
         learning_rate=.2,
         n_splits=10,
-        weight_decay=1e-8,
-        max_epochs=100
-        weight_interval=(-0.05, 0.05))
+        max_epochs=100,
+        tolerance=1e-4
+        weight_range=(-0.5, 0.5))
 
     net.add_layer(784)
 

@@ -7,20 +7,13 @@ import numpy as np
 import random
 import sys
 import pandas as pd
-
-from util import maybe_pickle
+import dill
 
 sigmoid = lambda x: 1. / (1 + np.exp(-x))
 
-def save(net):
-    layer_arch = "-".join([str(l.num_cells) for l in net.layers])
-    filename = ".cache/brain?learning_rate=%s&n_splits=%s&layers=%s.pickle" % (net.learning_rate, net.n_splits, layer_arch)
-
-    maybe_pickle(filename, net)
-
 class Network(object):
 
-    def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10, weight_interval=(-0.5, 0.5), max_epoch=100, tolerance=0.01, max_no_improvements = 3):
+    def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10, weight_range=(-0.5, 0.5), max_epoch=100, tolerance=0.01, max_no_improvements = 3):
         self.learning_rate = learning_rate
         self.weight_range = weight_range
         self.n_splits = n_splits
@@ -119,25 +112,25 @@ class Network(object):
         """
         assert len(self.layers) > 0, "No input layer has been defined"
         self.accuracy_list = []
+        self.error_list = []
         gym = zip(tset, tlabels)
         random.shuffle(gym)
-        # target_vector = self.target_label_as_vector(target_label)
+
         kfold = KFold(n_splits=self.n_splits)
         count = 0
-        for training_indices, testing_indices in kfold.split(gym[:2500]):
+        for training_indices, testing_indices in kfold.split(gym[:200]):
             self.reset_weights()
             training_set = [gym[i] for i in training_indices]
             testing_set = [gym[i] for i in testing_indices]
 
+            pre_accuracy = None
             accuracy = 0
 
-            pre_E_w = None
             no_improvement_count = 0
             for i in range(self.max_epoch):
                 # shake em up
-                shuffled_gym = zip(training_set, testing_set)
-                random.shuffle(shuffled_gym)
-                training_set, testing_set = shuffled_gym
+                random.shuffle(training_set)
+                random.shuffle(testing_set)
 
                 for image, label in training_set:
                     self.feed_input(image)
@@ -149,30 +142,39 @@ class Network(object):
                 # calculate cost
                 accumulated_errors = []
                 accuracy = 0
+
                 for test_image, test_label in testing_set:
                     self.feed_input(test_image)
                     self.feed_forward_network()
+
                     prediction = self.identify(test_image)
 
-                    accumulated_errors.append(test_label - prediction)
                     accuracy += int(test_label == prediction)
-                    sys.stdout.write(",")
+
+                    sys.stdout.write("*")
                     sys.stdout.flush()
 
                 accuracy /= len(testing_set)
 
-                E_w = (1. / 2) * sum([error ** 2 for error in accumulated_errors])
-
-                if pre_E_w is not None:
-                    if E_w > pre_E_w * (1 + tolerance):
+                if pre_accuracy is not None:
+                    print '\n%.2f >= %.2f' % (accuracy * (1 + self.tolerance), pre_accuracy)
+                    if accuracy * (1 + self.tolerance) >= pre_accuracy:
                         no_improvement_count += 1
                     else:
                         no_improvement_count = 0
-                if no_improvement_count > self.max_no_improvements:
 
+                print 'Mean accuracy so far, ', accuracy
+                print 'No Improvement count: %d / %d' % (no_improvement_count, self.max_no_improvements)
+                print '%d out of %d' % (i, self.max_epoch)
 
+                # we've converged (sort of)
+                if no_improvement_count >= self.max_no_improvements:
+                    break
+
+                pre_accuracy = accuracy
 
             self.accuracy_list.append(accuracy)
+
             self.mean_accuracy = np.mean(self.accuracy_list)
 
             count += 1
@@ -183,14 +185,13 @@ class Network(object):
             sys.stdout.write("\n%.2f accuracy so far.\n" % self.mean_accuracy)
             sys.stdout.flush()
 
-            if (self.mean_accuracy >= 0.8):
-                break
-
         self.plot = {"Accuracy": self.accuracy_list}
         print 'mean_accuracy', self.mean_accuracy
-        fig, ax = plt.subplots()
-        errors = pd.DataFrame(self.plot)
-        errors.plot(ax=ax)
+
+        _, ax = plt.subplots()
+
+        df = pd.DataFrame(self.plot)
+        df.plot(ax=ax)
         plt.show()
 
     def identify(self, image_vector):
@@ -211,8 +212,12 @@ class Network(object):
     def add_layer(self, num_cells = 0, af = None):
         l = Layer(num_cells = num_cells, af=af)
         if len(self.layers) is not 0:
-            l.init_weights(self.layers[-1].num_cells, weight_interval=self.weight_interval)
+            l.init_weights(self.layers[-1].num_cells, weight_range=self.weight_range)
         self.layers.append(l)
     def reset_weights(self):
         for layer in self.layers:
-            layer.init_weights()
+            layer.reset_weights()
+    def save(self):
+        layer_arch = "-".join([str(l.num_cells) for l in self.layers])
+        filename = ".cache/brain?learning_rate=%s&n_splits=%s&layers=%s.pickle" % (self.learning_rate, self.n_splits, layer_arch)
+        dill.dump(self, open(filename, 'wb'))

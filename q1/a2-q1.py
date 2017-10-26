@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-from lib.Network import Network, sigmoid, save
+from lib.Network import Network, sigmoid, net_as_string
 from lib.util import *
 # This is a simple example with one layer, it's not sufficient
 # Just to kind of get started
@@ -31,11 +31,11 @@ def main():
 
     # our system will be simple, one hidden layer
     net = Network(
-        learning_rate=.2,
+        learning_rate=.125,
         n_splits=10,
-        max_epochs=100,
-        tolerance=1e-4,
-        max_no_improvements=3
+        max_epoch=100,
+        tolerance=0.1,
+        max_no_improvements=3,
         weight_range=(-0.5, 0.5))
 
     net.add_layer(784)
@@ -44,9 +44,8 @@ def main():
 
     net.add_layer(10, sigmoid)  # output layer
 
-    net.train(input_training[:2000], train_labels[:2000])
-    save(net)
-
+    net.train(input_training, train_labels)
+    net.save()
 
 if __name__ == '__main__':
     main()

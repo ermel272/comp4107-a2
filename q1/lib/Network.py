@@ -8,30 +8,41 @@ import random
 import sys
 import pandas as pd
 
+from util import maybe_pickle
+
+MAX_PIXEL_INTENSITY = 255.
 def softmax(w, t = 1.0):
     e = np.exp(np.array(w) / t)
     dist = e / np.sum(e)
     return dist
 
-def sigmoid(x, der=False):
-    """Logistic sigmoid function.
-    Use der=True for the derivative."""
-    if not der:
-        return 1 / (1 + np.exp(-x))
+sigmoid = lambda x: 1. / (1 + np.exp(-x))
+
+def save(net):
+    layer_arch = "-".join([str(l.num_cells) for l in net.layers])
+    filename = ".cache/brain?learning_rate=%s&weight_decay=%s&n_splits=%s&layers=%s.pickle" % (net.learning_rate, net.weight_decay, net.n_splits, layer_arch)
+
+    maybe_pickle(filename, net)
 
 class Network(object):
-    def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10, weight_decay=0.01):
+    def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10, weight_decay=0.01, weight_interval=(-0.5, 0.5), max_epochs=100, tolerance=0.001):
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
+        self.weight_interval = weight_interval
         self.n_splits = n_splits
         self.layers = layers
-
+        self.max_epochs = max_epochs
+        self.tolerance = tolerance
+    def sanitize_image(self, image_vector = []):
+        """https://arxiv.org/pdf/1003.0358.pdf"""
+        # return [pixel / (MAX_PIXEL_INTENSITY / 2) - 1 for pixel in image_vector]
+        return [float(pixel != 0) for pixel in image_vector]
     def feed_input (self, image_vector = []):
         assert len(self.layers[0].cells) == len(image_vector), """
             Number of cells in input layer should match length of input vector
         """
         # experiment with this as only 1's and 0's
-        normalized_image_vector = [float(i != 0) for i in image_vector]
+        normalized_image_vector = self.sanitize_image(image_vector)
         for i in range(len(self.layers[0].cells)):
             self.layers[0].cells[i].output = normalized_image_vector[i]
     def feed_forward_network(self):
@@ -121,24 +132,28 @@ class Network(object):
         # target_vector = self.target_label_as_vector(target_label)
         kfold = KFold(n_splits=self.n_splits)
         count = 0
-        for training_indices, testing_indices in kfold.split(gym):
+        for training_indices, testing_indices in kfold.split(gym[:2500]): #epoch
+            # reset weights
+            self.reset_weights()
             training_set = [gym[i] for i in training_indices]
             testing_set = [gym[i] for i in testing_indices]
-            for image, label in training_set:
-                self.feed_input(image)
-                self.feed_forward_network()
-                self.back_propagate(self.target_label_as_vector(label))
-                sys.stdout.write(".")
-                sys.stdout.flush()
 
-            num_correct = 0
-            for test_image, test_label in testing_set:
-                self.feed_input(test_image)
-                self.feed_forward_network()
-                prediction = self.identify(test_image)
-                num_correct += int(prediction == test_label)
-                sys.stdout.write(",")
-                sys.stdout.flush()
+            while l2cost > tolerance: #epochs
+                for image, label in training_set:
+                    self.feed_input(image)
+                    self.feed_forward_network()
+                    self.back_propagate(self.target_label_as_vector(label))
+                    sys.stdout.write(".")
+                    sys.stdout.flush()
+
+                num_correct = 0
+                for test_image, test_label in testing_set:
+                    self.feed_input(test_image)
+                    self.feed_forward_network()
+                    prediction = self.identify(test_image)
+                    num_correct += int(prediction == test_label)
+                    sys.stdout.write(",")
+                    sys.stdout.flush()
 
             accuracy = num_correct / len(testing_set)
             self.accuracy_list.append(accuracy)
@@ -180,5 +195,8 @@ class Network(object):
     def add_layer(self, num_cells = 0, af = None):
         l = Layer(num_cells = num_cells, af=af)
         if len(self.layers) is not 0:
-            l.init_weights(self.layers[-1].num_cells)
+            l.init_weights(self.layers[-1].num_cells, weight_interval=self.weight_interval)
         self.layers.append(l)
+    def reset_weights(self):
+        for layer in self.layers:
+            layer.init_weights()

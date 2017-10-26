@@ -6,9 +6,9 @@ class Layer(object):
         self.cells = [Cell() for i in range(num_cells)]
         self.activation_function = af
 
-    def init_weights(self, num_cells):
+    def init_weights(self, num_cells, weight_interval=(-0.5, 0.5)):
         for i in range(len(self.cells)):
-            self.cells[i].init_weights(num_cells)
+            self.cells[i].init_weights(num_cells, weight_interval)
     def reset_outputs(self):
         for i in range(len(self.cells)):
             self.cells[i].output = 0

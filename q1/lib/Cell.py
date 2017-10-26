@@ -7,12 +7,12 @@ class Cell(object):
         self.weights = [] # incoming weights from previous layer
     def set_output(self, output):
         self.output = output
-    def init_weights(self, num_weights):
+    def init_weights(self, num_weights, weight_interval=(-0.5, 0.5)):
         """
             You can think of bias term as the m'th incoming node
             weights spanning 1-m-1, the mth term is x_m = -1
             and the weight corresponding to it would be the bias term
         """
-        # range of random is [-0.5, 0.5)
-        self.bias = np.random.rand() - 0.5
-        self.weights = [i - 0.5 for i in np.random.rand(num_weights)]
+        low, high = weight_interval
+        self.bias = np.random.uniform(low, high)
+        self.weights = np.random.uniform(low, high, num_weights)

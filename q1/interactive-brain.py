@@ -3,14 +3,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-BRAIN = '.cache/brain-full-2.pickle'
+BRAIN = '.cache/brain.pickle'
 
 net = pickle.load(open(BRAIN))
 
 print 'Inspecting %s' % BRAIN
 print 'Mean accuracy:', net.mean_accuracy
 print 'Accuracy per training fold:', net.plot
-
 images, labels = pickle.load(open('.cache/train-images-idx3-ubyte.pickle')), pickle.load(open('.cache/train-labels-idx1-ubyte.pickle'))
 images = [image.flatten() for image in images]
 
@@ -20,7 +19,7 @@ def show(index):
 
 def test(index, plt=False):
     if plt:
-        show(images[index])
+        show(index)
     return net.identify(images[index]), labels[index]
 
 def accuracy():

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-from lib.Network import Network, sigmoid
+from lib.Network import Network, sigmoid, save
 from lib.util import *
 # This is a simple example with one layer, it's not sufficient
 # Just to kind of get started
@@ -24,28 +24,27 @@ def main():
     test_data = load_pickle(test_pickle)
     test_labels = load_pickle(test_labels_pickle)
 
-    net = load_pickle(config['brain']['filename'])
-
-    if net:
-        print 'Using already existing neural network from %s' % config['brain']['filename']
-
     # There are now 60,000 items of length 784 (28x28)
     # This will serve as input to neural network
     # Each cell will have 784 inputs
     input_training = train_data.reshape(60000, 784)
 
-    if not net:
-        # our system will be simple, one hidden layer
-        net = Network(learning_rate=.05, n_splits=20)
-        net.add_layer(784)
+    # our system will be simple, one hidden layer
+    net = Network(
+        learning_rate=.2,
+        n_splits=10,
+        weight_decay=1e-8,
+        max_epochs=100
+        weight_interval=(-0.05, 0.05))
 
-        net.add_layer(50, sigmoid)
-        net.add_layer(30, sigmoid)
+    net.add_layer(784)
 
-        net.add_layer(10, sigmoid)  # output layer
+    net.add_layer(20, sigmoid)
 
-        net.train(input_training, train_labels)
-        maybe_pickle('.cache/brain=l.05-784-50-30-10-20split.pickle', net)
+    net.add_layer(10, sigmoid)  # output layer
+
+    net.train(input_training[:2000], train_labels[:2000])
+    save(net)
 
 
 if __name__ == '__main__':

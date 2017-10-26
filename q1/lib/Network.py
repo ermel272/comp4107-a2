@@ -20,13 +20,14 @@ def save(net):
 
 class Network(object):
 
-    def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10, weight_interval=(-0.5, 0.5), max_epochs=100, tolerance=0.001):
+    def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10, weight_interval=(-0.5, 0.5), max_epoch=100, tolerance=0.01, max_no_improvements = 3):
         self.learning_rate = learning_rate
         self.weight_range = weight_range
         self.n_splits = n_splits
         self.layers = layers
-        self.max_epochs = max_epochs
+        self.max_epoch = max_epoch
         self.tolerance = tolerance
+        self.max_no_improvements = max_no_improvements
 
     def sanitize_image(self, image_vector = []):
         return [float(pixel != 0) for pixel in image_vector]
@@ -123,13 +124,21 @@ class Network(object):
         # target_vector = self.target_label_as_vector(target_label)
         kfold = KFold(n_splits=self.n_splits)
         count = 0
-        for training_indices, testing_indices in kfold.split(gym[:2500]): #epoch
-            # reset weights
+        for training_indices, testing_indices in kfold.split(gym[:2500]):
             self.reset_weights()
             training_set = [gym[i] for i in training_indices]
             testing_set = [gym[i] for i in testing_indices]
 
-            while l2cost > tolerance: #epochs
+            accuracy = 0
+
+            pre_E_w = None
+            no_improvement_count = 0
+            for i in range(self.max_epoch):
+                # shake em up
+                shuffled_gym = zip(training_set, testing_set)
+                random.shuffle(shuffled_gym)
+                training_set, testing_set = shuffled_gym
+
                 for image, label in training_set:
                     self.feed_input(image)
                     self.feed_forward_network()
@@ -137,16 +146,32 @@ class Network(object):
                     sys.stdout.write(".")
                     sys.stdout.flush()
 
-                num_correct = 0
+                # calculate cost
+                accumulated_errors = []
+                accuracy = 0
                 for test_image, test_label in testing_set:
                     self.feed_input(test_image)
                     self.feed_forward_network()
                     prediction = self.identify(test_image)
-                    num_correct += int(prediction == test_label)
+
+                    accumulated_errors.append(test_label - prediction)
+                    accuracy += int(test_label == prediction)
                     sys.stdout.write(",")
                     sys.stdout.flush()
 
-            accuracy = num_correct / len(testing_set)
+                accuracy /= len(testing_set)
+
+                E_w = (1. / 2) * sum([error ** 2 for error in accumulated_errors])
+
+                if pre_E_w is not None:
+                    if E_w > pre_E_w * (1 + tolerance):
+                        no_improvement_count += 1
+                    else:
+                        no_improvement_count = 0
+                if no_improvement_count > self.max_no_improvements:
+
+
+
             self.accuracy_list.append(accuracy)
             self.mean_accuracy = np.mean(self.accuracy_list)
 

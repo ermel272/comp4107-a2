@@ -34,7 +34,8 @@ def main():
         learning_rate=.2,
         n_splits=10,
         max_epochs=100,
-        tolerance=1e-4
+        tolerance=1e-4,
+        max_no_improvements=3
         weight_range=(-0.5, 0.5))
 
     net.add_layer(784)

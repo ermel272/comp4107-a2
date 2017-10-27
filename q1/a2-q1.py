@@ -33,14 +33,15 @@ def main():
     net = Network(
         learning_rate=.25,
         n_splits=10,
-        max_epoch=100,
+        max_iter=100,
         tolerance=1e-2,
         max_no_improvements=3,
         weight_range=(-0.5, 0.5))
 
     net.add_layer(784)
 
-    net.add_layer(20, sigmoid)
+    net.add_layer(50, sigmoid)
+    net.add_layer(30, sigmoid)
 
     net.add_layer(10, sigmoid)  # output layer
 

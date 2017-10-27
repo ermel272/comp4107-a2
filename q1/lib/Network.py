@@ -13,17 +13,17 @@ sigmoid = lambda x: 1. / (1 + np.exp(-x))
 
 def save(net):
     layer_arch = "-".join([str(l.num_cells) for l in net.layers])
-    filename = ".cache/brain?learning_rate=%s&n_splits=%s&layers=%s.pickle" % (net.learning_rate, net.n_splits, layer_arch)
+    filename = ".cache/brain--learning_rate=%s&tol=%s&max_iter=%s&n_splits=%s&layers=%s.pickle" % (net.learning_rate, net.tolerance, net.max_iter, net.n_splits, layer_arch)
     dill.dump(net, open(filename, 'wb'))
 
 class Network(object):
 
-    def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10, weight_range=(-0.5, 0.5), max_epoch=100, tolerance=0.01, max_no_improvements = 3):
+    def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10, weight_range=(-0.5, 0.5), max_iter=100, tolerance=0.01, max_no_improvements = 3):
         self.learning_rate = learning_rate
         self.weight_range = weight_range
         self.n_splits = n_splits
         self.layers = layers
-        self.max_epoch = max_epoch
+        self.max_iter = max_iter
         self.tolerance = tolerance
         self.max_no_improvements = max_no_improvements
 
@@ -95,16 +95,16 @@ class Network(object):
         for layer_index in range(1, len(self.layers)):
             layer = self.layers[-layer_index]
             layer_before = self.layers[-1 * (layer_index + 1)]
+
             for cell_index in range(len(layer_before.cells)):
                 cell = layer_before.cells[cell_index]
-                term = sum([cell.weights[cell_index] * cell.correct for cell in layer.cells])
-                layer_before.cells[cell_index].correct = cell.output * (1 - cell.output) * term
+                term = sum([c.weights[cell_index] * c.correct for c in layer.cells])
+                cell.correct = cell.output * (1 - cell.output) * term
 
     def target_label_as_vector(self, target_label = 0):
         target_vector = np.zeros(len(self.layers[-1].cells))
         target_vector[target_label] = 1
         return target_vector
-
 
     def train(self, tset = [], tlabels = []):
         """
@@ -129,11 +129,7 @@ class Network(object):
             accuracy = 0
             no_improvement_count = 0
 
-            for i in range(self.max_epoch):
-                # shake em up
-                random.shuffle(training_set)
-                random.shuffle(testing_set)
-
+            for i in range(self.max_iter):
                 for image, label in training_set:
                     self.feed_input(image)
                     self.feed_forward_network()
@@ -155,14 +151,14 @@ class Network(object):
                 accuracy /= len(testing_set)
 
                 print '\n(%.3f - %.3f) <= %.3f' % (accuracy, pre_accuracy, self.tolerance)
-                if (accuracy - pre_accuracy) <= self.tolerance
+                if (accuracy - pre_accuracy) <= self.tolerance:
                     no_improvement_count += 1
                 else:
                     no_improvement_count = 0
 
                 print '\nMean accuracy so far, ', accuracy
                 print 'No Improvement count: %d / %d' % (no_improvement_count, self.max_no_improvements)
-                print '%d out of %d' % (i, self.max_epoch)
+                print '%d out of %d' % (i, self.max_iter)
 
                 # we've converged (sort of)
                 if no_improvement_count >= self.max_no_improvements:

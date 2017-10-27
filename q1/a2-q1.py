@@ -31,7 +31,7 @@ def main():
 
     # our system will be simple, one hidden layer
     net = Network(
-        learning_rate=.125,
+        learning_rate=.25,
         n_splits=10,
         max_epoch=100,
         tolerance=1e-2,

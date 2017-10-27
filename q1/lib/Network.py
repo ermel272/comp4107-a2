@@ -77,9 +77,8 @@ class Network(object):
                 cell = layer.cells[cell_index]
                 # basically the dot product
 
-                layers.cells[cell_indexweights].weights =
-                # for w in range(len(cell.weights)):
-                #     layer.cells[cell_index].weights[w] += self.learning_rate * layer_before.cells[w].output * cell.correct
+                for w in range(len(cell.weights)):
+                    layer.cells[cell_index].weights[w] += self.learning_rate * layer_before.cells[w].output * cell.correct
 
                 # we should probably update bias too, because its also considered a weight
                 layer.cells[cell_index].bias += self.learning_rate * 1 * cell.correct # 1 representing cell output
@@ -129,7 +128,7 @@ class Network(object):
             pre_accuracy = 0
             accuracy = 0
             no_improvement_count = 0
-            
+
             for i in range(self.max_epoch):
                 # shake em up
                 random.shuffle(training_set)

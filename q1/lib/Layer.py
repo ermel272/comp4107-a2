@@ -14,10 +14,12 @@ class Layer(object):
 
     def reset_weights(self):
         for i in range(len(self.cells)):
-            self.cells[i].reset_weights
+            self.cells[i].reset_weights()
+
     def reset_outputs(self):
         for i in range(len(self.cells)):
             self.cells[i].output = 0
+
     def reset_correct(self):
         for i in range(len(self.cells)):
             self.cells[i].correct = None

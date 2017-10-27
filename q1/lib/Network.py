@@ -11,6 +11,11 @@ import dill
 
 sigmoid = lambda x: 1. / (1 + np.exp(-x))
 
+def save(net):
+    layer_arch = "-".join([str(l.num_cells) for l in net.layers])
+    filename = ".cache/brain?learning_rate=%s&n_splits=%s&layers=%s.pickle" % (net.learning_rate, net.n_splits, layer_arch)
+    dill.dump(net, open(filename, 'wb'))
+
 class Network(object):
 
     def __init__(self, layers = [], learning_rate = 0.5, n_splits = 10, weight_range=(-0.5, 0.5), max_epoch=100, tolerance=0.01, max_no_improvements = 3):
@@ -112,13 +117,12 @@ class Network(object):
         """
         assert len(self.layers) > 0, "No input layer has been defined"
         self.accuracy_list = []
-        self.error_list = []
         gym = zip(tset, tlabels)
         random.shuffle(gym)
 
         kfold = KFold(n_splits=self.n_splits)
         count = 0
-        for training_indices, testing_indices in kfold.split(gym[:200]):
+        for training_indices, testing_indices in kfold.split(gym[:2500]):
             self.reset_weights()
             training_set = [gym[i] for i in training_indices]
             testing_set = [gym[i] for i in testing_indices]
@@ -157,13 +161,13 @@ class Network(object):
                 accuracy /= len(testing_set)
 
                 if pre_accuracy is not None:
-                    print '\n%.2f >= %.2f' % (accuracy * (1 + self.tolerance), pre_accuracy)
-                    if accuracy * (1 + self.tolerance) >= pre_accuracy:
+                    print '\n%.2f <= %.2f' % (accuracy, pre_accuracy * (1 + self.tolerance))
+                    if accuracy <= pre_accuracy * (1 + self.tolerance):
                         no_improvement_count += 1
                     else:
                         no_improvement_count = 0
 
-                print 'Mean accuracy so far, ', accuracy
+                print '\nMean accuracy so far, ', accuracy
                 print 'No Improvement count: %d / %d' % (no_improvement_count, self.max_no_improvements)
                 print '%d out of %d' % (i, self.max_epoch)
 
@@ -217,7 +221,3 @@ class Network(object):
     def reset_weights(self):
         for layer in self.layers:
             layer.reset_weights()
-    def save(self):
-        layer_arch = "-".join([str(l.num_cells) for l in self.layers])
-        filename = ".cache/brain?learning_rate=%s&n_splits=%s&layers=%s.pickle" % (self.learning_rate, self.n_splits, layer_arch)
-        dill.dump(self, open(filename, 'wb'))

@@ -2,11 +2,9 @@ from __future__ import division
 
 from Layer import Layer
 from sklearn.model_selection import KFold
-import matplotlib.pyplot as plt
 import numpy as np
 import random
 import sys
-import pandas as pd
 import dill
 
 sigmoid = lambda x: 1. / (1 + np.exp(-x))
@@ -15,6 +13,7 @@ def save(net):
     layer_arch = "-".join([str(l.num_cells) for l in net.layers])
     filename = ".cache/brain--learning_rate=%s&tol=%s&max_iter=%s&n_splits=%s&layers=%s.pickle" % (net.learning_rate, net.tolerance, net.max_iter, net.n_splits, layer_arch)
     dill.dump(net, open(filename, 'wb'))
+    print 'Saved file as %s' % filename
 
 class Network(object):
 
@@ -120,7 +119,7 @@ class Network(object):
 
         kfold = KFold(n_splits=self.n_splits)
         count = 0
-        for training_indices, testing_indices in kfold.split(gym[:150]):
+        for training_indices, testing_indices in kfold.split(gym[:1000]):
             self.reset_weights()
             training_set = [gym[i] for i in training_indices]
             testing_set = [gym[i] for i in testing_indices]
@@ -159,9 +158,12 @@ class Network(object):
                 print '\nMean accuracy so far, ', accuracy
                 print 'No Improvement count: %d / %d' % (no_improvement_count, self.max_no_improvements)
                 print '%d out of %d' % (i, self.max_iter)
+                sys.stdout.write("\n%d / %d folds.\n" % (count, kfold.get_n_splits()))
+                sys.stdout.flush()
 
                 # we've converged (sort of)
                 if no_improvement_count >= self.max_no_improvements:
+                    print 'Converged!'
                     break
 
                 pre_accuracy = accuracy
@@ -169,23 +171,14 @@ class Network(object):
             self.accuracy_list.append(accuracy)
 
             self.mean_accuracy = np.mean(self.accuracy_list)
-
             count += 1
 
-            sys.stdout.write("\n%d / %d folds completed.\n" % (count, kfold.get_n_splits()))
-            sys.stdout.flush()
-
-            sys.stdout.write("\n%.2f accuracy so far.\n" % self.mean_accuracy)
-            sys.stdout.flush()
-
         self.plot = {"Accuracy": self.accuracy_list}
-        print 'mean_accuracy', self.mean_accuracy
-
-        _, ax = plt.subplots()
-
-        df = pd.DataFrame(self.plot)
-        df.plot(ax=ax)
-        plt.show()
+        self.confidence_interval = (
+            self.mean_accuracy - 3 * np.std(self.accuracy_list),
+            self.mean_accuracy + 3 * np.std(self.accuracy_list)
+        )
+        print 'confidence_interval', self.confidence_interval
 
     def identify(self, image_vector):
         self.feed_input(image_vector)

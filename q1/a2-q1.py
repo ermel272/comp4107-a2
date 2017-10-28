@@ -40,7 +40,8 @@ def main():
 
     net.add_layer(784)
 
-    net.add_layer(20, sigmoid)
+    net.add_layer(30, sigmoid)
+    net.add_layer(15, sigmoid)
     net.add_layer(10, sigmoid)  # output layer
 
     net.train(input_training, train_labels)

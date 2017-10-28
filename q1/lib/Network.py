@@ -119,7 +119,7 @@ class Network(object):
 
         kfold = KFold(n_splits=self.n_splits)
         count = 0
-        for training_indices, testing_indices in kfold.split(gym):
+        for training_indices, testing_indices in kfold.split(gym[:1000]):
             self.reset_weights()
             training_set = [gym[i] for i in training_indices]
             testing_set = [gym[i] for i in testing_indices]
@@ -133,8 +133,8 @@ class Network(object):
                     self.feed_input(image)
                     self.feed_forward_network()
                     self.back_propagate(self.target_label_as_vector(label))
-                    sys.stdout.write(".")
-                    sys.stdout.flush()
+                    # sys.stdout.write(".")
+                    # sys.stdout.flush()
 
                 # calculate cost
                 accumulated_errors = []
@@ -186,10 +186,12 @@ class Network(object):
         return np.argmax(map(lambda cell: cell.output, self.layers[-1].cells))
 
     def add_layer(self, num_cells = 0, af = None):
-        l = Layer(num_cells = num_cells, af=af)
+        l = Layer(num_cells = num_cells, af=af, weight_range=self.weight_range)
         if len(self.layers) is not 0:
-            l.init_weights(self.layers[-1].num_cells, weight_range=self.weight_range)
+            l.init_weights(self.layers[-1].num_cells)
+
         self.layers.append(l)
+
     def reset_weights(self):
         for layer in self.layers:
             layer.reset_weights()

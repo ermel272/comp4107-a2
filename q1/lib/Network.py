@@ -119,7 +119,7 @@ class Network(object):
 
         kfold = KFold(n_splits=self.n_splits)
         count = 0
-        for training_indices, testing_indices in kfold.split(gym[:1000]):
+        for training_indices, testing_indices in kfold.split(gym):
             self.reset_weights()
             training_set = [gym[i] for i in training_indices]
             testing_set = [gym[i] for i in testing_indices]

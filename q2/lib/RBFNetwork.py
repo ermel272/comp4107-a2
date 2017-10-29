@@ -3,12 +3,15 @@ import random
 import sys
 import matplotlib.pyplot as plt
 import pandas as pd
-from numpy import mean, zeros, delete
+from numpy import mean, zeros, argmax
 from numpy.linalg import norm
 from scipy.cluster.vq import kmeans, whiten
 from sklearn.model_selection import KFold
 
 from q2.lib.Neuron import Neuron
+
+TOLERANCE = 1e-2
+MAX_ITERS = 3
 
 
 class RBFNetwork(object):
@@ -20,7 +23,7 @@ class RBFNetwork(object):
 
     def init_hidden_layer(self, k, data, output, learning_rate):
         print "Performing K means on {} inputs with k={}".format(len(data), k)
-        centroids, distortion = kmeans(whiten(data), k)
+        centroids, distortion = kmeans(data, k)
         clusters = compute_clusters(centroids, data)
         empty_clusters = list()
 
@@ -49,30 +52,44 @@ class RBFNetwork(object):
             training_set = [gym[i] for i in training_indices]
             testing_set = [gym[i] for i in testing_indices]
 
-            for image, label in training_set:
-                self.feed_input(image)
-                self.forward_propagate()
-                self.back_propagate(self.target_label_as_vector(label))
-                sys.stdout.write(".")
-                sys.stdout.flush()
+            for neuron in self.hidden_layer:
+                neuron.reset_weights()
 
-            num_correct = 0
-            for test_image, test_label in testing_set:
-                self.feed_input(test_image)
-                self.forward_propagate()
-                prediction = self.identify(test_image)
-                num_correct += int(prediction == test_label)
-                sys.stdout.write(",")
-                sys.stdout.flush()
+            prev_accuracy = 0.0
+            biggest_accuracy = 0.0
+            iters = 0
+            for i in range(0, 100):
+                for image, label in training_set:
+                    self.feed_input(image)
+                    self.forward_propagate()
+                    self.back_propagate(self.target_label_as_vector(label))
+                    # sys.stdout.write(".")
+                    # sys.stdout.flush()
 
-            accuracy = num_correct / len(testing_set)
-            accuracy_list.append(accuracy)
+                num_correct = 0.
+                for test_image, test_label in testing_set:
+                    prediction = self.identify(test_image)
+                    num_correct += int(prediction == test_label)
+                    # sys.stdout.write(",")
+                    # sys.stdout.flush()
+
+                accuracy = num_correct / len(testing_set)
+                biggest_accuracy = accuracy if accuracy > biggest_accuracy else biggest_accuracy
+                iters = iters + 1 if accuracy - prev_accuracy <= TOLERANCE else 0
+                prev_accuracy = accuracy
+
+                print "\n %.2f accuracy on iteration %s" % (accuracy, i)
+                print "Completed {}/3 non-improving iterations".format(iters)
+
+                if iters == MAX_ITERS:
+                    break
+
+            accuracy_list.append(biggest_accuracy)
             mean_accuracy = mean(accuracy_list)
-
             count += 1
 
             print "{} / {} folds completed.".format(count, kfold.get_n_splits())
-            print "{0:.2f} accuracy so far".format(mean_accuracy)
+            print "{0:.2f} converged accuracy".format(mean_accuracy)
 
         plot = {"Accuracy": accuracy_list}
         print 'mean_accuracy', mean_accuracy
@@ -123,14 +140,7 @@ class RBFNetwork(object):
     def identify(self, image_vector):
         self.feed_input(image_vector)
         self.forward_propagate()
-        max_so_far = 0
-        i = -1
-
-        for cell_index in range(len(self.output_layer)):
-            if self.output_layer[cell_index] > max_so_far:
-                max_so_far = self.output_layer[cell_index]
-                i = cell_index
-        return i
+        return argmax(self.output_layer)
 
 
 def find_closest_centroid(vector, centroids):
@@ -162,7 +172,7 @@ def compute_sigma(centroid, data):
     """
     Computes sigma as per http://mccormickml.com/2013/08/15/radial-basis-function-network-rbfn-tutorial/
     """
-    dist = 0
+    dist = 0.0
     for vector in data:
         dist += norm(vector - centroid)
 
@@ -170,4 +180,4 @@ def compute_sigma(centroid, data):
 
 
 def compute_beta(sigma):
-    return 1 / (2 * (sigma ** 2))
+    return 1.0 / (2 * (sigma ** 2))

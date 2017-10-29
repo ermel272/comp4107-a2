@@ -9,6 +9,7 @@ import struct
 import sys
 
 import numpy as np
+from scipy.cluster.vq import whiten
 from six.moves import cPickle as pickle
 from six.moves.urllib.request import urlretrieve
 
@@ -23,8 +24,8 @@ DATA_TYPES = {
     0x0e: 'd'
 }  # double (8 bytes)
 
-LEARNING_RATE = 0.125
-K = 5
+LEARNING_RATE = .25
+K = 20
 CACHE_DIR = '.cache'
 URL = 'http://yann.lecun.com/exdb/mnist/'
 
@@ -49,13 +50,16 @@ def main():
     if net:
         print 'Using already existing neural network from %s' % config['brain']['filename']
     else:
-        input_training = train_data.reshape(60000, 784)[:2000]
+        input_training = train_data.reshape(60000, 784)[:500]
 
         # Regularize data to use 0's and 1's
-        print "Regularizing input vector data to use 1's and 0's"
+        # print "Regularizing input vector data to use 1's and 0's"
         for i in range(0, len(input_training)):
             image_vector = input_training[i]
-            input_training[i] = [float(j != 0) for j in image_vector] # [pixel / (255.0 / 2) - 1 for pixel in image_vector]
+            input_training[i] = [j / 255.0 for j in image_vector]  # [pixel / (255.0 / 2) - 1 for pixel in image_vector]
+
+        # Regularize the data by whitening it
+        # input_training = whiten(input_training)
 
         # Initialize the RBF network
         net = RBFNetwork(input_training, k=K, learning_rate=LEARNING_RATE)

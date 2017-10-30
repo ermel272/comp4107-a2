@@ -1,17 +1,13 @@
 import random
-
-import matplotlib.pyplot as plt
-import pandas as pd
 from numpy import mean, zeros, argmax
 from numpy.linalg import norm
 from scipy.cluster.vq import kmeans, kmeans2, whiten
 from sklearn.model_selection import KFold
 
-from q2.lib.Neuron import Neuron
+from Neuron import Neuron
 
 TOLERANCE = 0.01
 MAX_ITERS = 3
-
 
 class RBFNetwork(object):
     def __init__(self, data, k=20, output=10, learning_rate=0.125):
@@ -41,7 +37,7 @@ class RBFNetwork(object):
 
     def train(self, tset, tlabels):
         accuracy_list = []
-        mean_accuracy = 0
+        self.mean_accuracy = 0
         gym = zip(tset, tlabels)
         random.shuffle(gym)
 
@@ -84,18 +80,18 @@ class RBFNetwork(object):
                     break
 
             accuracy_list.append(biggest_accuracy)
-            mean_accuracy = mean(accuracy_list)
+            self.mean_accuracy = mean(accuracy_list)
             count += 1
 
             print "{} / {} folds completed.".format(count, kfold.get_n_splits())
-            print "{0:.2f} converged accuracy".format(mean_accuracy)
+            print "{0:.2f} converged accuracy".format(self.mean_accuracy)
 
-        plot = {"Accuracy": accuracy_list}
-        print 'mean_accuracy', mean_accuracy
-        fig, ax = plt.subplots()
-        errors = pd.DataFrame(plot)
-        errors.plot(ax=ax)
-        plt.show()
+        self.accuracy_list = accuracy_list
+        self.plot = {"Accuracy": accuracy_list}
+        self.confidence_interval = (
+            self.mean_accuracy - 3 * np.std(self.accuracy_list),
+            self.mean_accuracy + 3 * np.std(self.accuracy_list)
+        )
 
     def feed_input(self, vector):
         # Pass the input vector to each neuron in the network

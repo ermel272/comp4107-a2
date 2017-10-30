@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.linalg import norm
 
-
 class Neuron(object):
     def __init__(self, num_weights, beta, mu, output=0.0, leaning_rate=0.125):
         self.beta = beta

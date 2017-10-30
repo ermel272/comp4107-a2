@@ -8,6 +8,6 @@
     "labels": "t10k-labels-idx1-ubyte.gz"
   },
   "brain": {
-    "filename": ".cache/brain-full-2.pickle"
+    "filename": ".cache/brain-full-xd.pickle"
   }
 }

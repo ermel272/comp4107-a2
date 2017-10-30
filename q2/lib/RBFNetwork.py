@@ -1,16 +1,15 @@
 import random
 
-import sys
 import matplotlib.pyplot as plt
 import pandas as pd
 from numpy import mean, zeros, argmax
 from numpy.linalg import norm
-from scipy.cluster.vq import kmeans, whiten
+from scipy.cluster.vq import kmeans, kmeans2, whiten
 from sklearn.model_selection import KFold
 
 from q2.lib.Neuron import Neuron
 
-TOLERANCE = 1e-2
+TOLERANCE = 0.01
 MAX_ITERS = 3
 
 
@@ -43,7 +42,7 @@ class RBFNetwork(object):
     def train(self, tset, tlabels):
         accuracy_list = []
         mean_accuracy = 0
-        gym = zip(tset, tlabels)[:2000]
+        gym = zip(tset, tlabels)
         random.shuffle(gym)
 
         kfold = KFold(n_splits=10)

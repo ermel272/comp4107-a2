@@ -50,15 +50,12 @@ def main():
     if net:
         print 'Using already existing neural network from %s' % config['brain']['filename']
     else:
-        input_training = train_data.reshape(60000, 784)[:500]
+        input_training = train_data.reshape(60000, 784).astype(float)[:10000]
 
-        # Regularize data to use 0's and 1's
-        # print "Regularizing input vector data to use 1's and 0's"
+        # Regularize data
         for i in range(0, len(input_training)):
             image_vector = input_training[i]
             input_training[i] = [j / 255.0 for j in image_vector]  # [pixel / (255.0 / 2) - 1 for pixel in image_vector]
-
-        # Regularize the data by whitening it
         # input_training = whiten(input_training)
 
         # Initialize the RBF network

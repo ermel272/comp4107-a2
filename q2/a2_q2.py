@@ -25,7 +25,7 @@ DATA_TYPES = {
 }  # double (8 bytes)
 
 LEARNING_RATE = .25
-K = 20
+K = 30
 CACHE_DIR = '.cache'
 URL = 'http://yann.lecun.com/exdb/mnist/'
 
@@ -50,7 +50,7 @@ def main():
     if net:
         print 'Using already existing neural network from %s' % config['brain']['filename']
     else:
-        input_training = train_data.reshape(60000, 784).astype(float)[:10000]
+        input_training = train_data.reshape(60000, 784).astype(float)
 
         # Regularize data
         for i in range(0, len(input_training)):

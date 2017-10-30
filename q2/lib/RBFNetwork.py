@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from numpy import mean, zeros, argmax
 from numpy.linalg import norm
-from scipy.cluster.vq import kmeans, kmeans2, whiten
+from scipy.cluster.vq import kmeans
 from sklearn.model_selection import KFold
 
 from q2.lib.Neuron import Neuron

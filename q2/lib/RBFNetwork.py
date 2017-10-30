@@ -1,5 +1,5 @@
 import random
-from numpy import mean, zeros, argmax
+from numpy import mean, zeros, argmax, std
 from numpy.linalg import norm
 from scipy.cluster.vq import kmeans
 from sklearn.model_selection import KFold
@@ -90,8 +90,8 @@ class RBFNetwork(object):
         self.accuracy_list = accuracy_list
         self.plot = {"Accuracy": accuracy_list}
         self.confidence_interval = (
-            self.mean_accuracy - 3 * np.std(self.accuracy_list),
-            self.mean_accuracy + 3 * np.std(self.accuracy_list)
+            self.mean_accuracy - 3 * std(self.accuracy_list),
+            self.mean_accuracy + 3 * std(self.accuracy_list)
         )
 
     def feed_input(self, vector):

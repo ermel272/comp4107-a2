@@ -14,6 +14,7 @@ class RBFNetwork(object):
         self.learning_rate = learning_rate
         self.hidden_layer = []
         self.output_layer = [0] * output
+        self.k = k
         self.init_hidden_layer(k, data, output, learning_rate)
 
     def init_hidden_layer(self, k, data, output, learning_rate):

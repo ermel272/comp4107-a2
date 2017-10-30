@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-BRAIN = '.cache/brain--learning_rate=0.25&tol=0.01&max_iter=100&n_splits=10&layers=784-20-10.pickle'
-BRAIN2 = '.cache/brain--learning_rate=0.25&n_splits=10&layers=784-20-10.pickle'
+BRAIN = 'assets/brain--learning_rate=0.25&tol=0.01&max_iter=100&n_splits=10&layers=784-20-10.pickle'
+BRAIN2 = 'assets/brain--learning_rate=0.25&n_splits=10&layers=784-20-10.pickle'
 net = pickle.load(open(BRAIN, 'rb'))
 
 print 'Inspecting %s' % BRAIN
